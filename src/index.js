@@ -17,9 +17,24 @@ import connectDB from "./db/index.js";
 
 
 
-connectDB();
+connectDB()
+// async function always return a promise. 
 
+.then( () => {
 
+    app.on("error", (err) => {
+        console.log("Server Failed", err);
+    });
+    
+    const port = process.env.PORT || 8000;
+    app.listen(port, () => {
+        console.log(`Server is runnning at port : ${port}`);
+    });
+})
+
+.catch((err) => {
+    console.log("DATABASE connection Failed on App!!! :", err);
+})
 
 
 
