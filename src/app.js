@@ -15,6 +15,7 @@ app.use(express.urlencoded({
         extended: "true",
         limit: "10kb"
     }));
+    
 // If someone request a static file that dosen't need server side processing before sending
 // serve them directly from public folder and (express can handle that himself).
 app.use(express.static("public"));
