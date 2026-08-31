@@ -12,7 +12,7 @@ class ApiResponse{
         this.success = true
     }
 
-    // should know basics pf stastus code overview on it.
+    // should know basics of stastus code overview on it.
 }
 
 export {ApiResponse}
