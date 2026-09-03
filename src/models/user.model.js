@@ -62,12 +62,11 @@ const userSchema = new mongoose.Schema({
 // we use (pre) middle-ware which will execute before each save operation on DB in user model schema.
 // save is the event on userSchema on which this function run before it will be saved in DB.
 // we don't use arrow func here because the function need refrence that we want to do this operation on which data and arrow func don't have refrence.
-userSchema.pre("save", async function(next){
+userSchema.pre("save", async function(){
     // we only want to run this password encryption when password is modified.
-    if(!this.isModified("password")) return next();
+    if(!this.isModified("password")) return;
 
     this.password = await bcrypt.hash(this.password, 10) // the number here is salt value.
-    next()
 })
 
 // checking credentials from db the password user gave is that similar from what stored in db.

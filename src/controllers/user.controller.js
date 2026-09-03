@@ -38,7 +38,6 @@ const registerUser = asyncHandler( async(req, res) => {
         throw new ApiError(400, "Bad request -- Invalid email")
     }
 
-
     
     // STEP-3 Check if user already exist from database. 
     const ExistedUser = await User.findOne({
@@ -65,6 +64,8 @@ const registerUser = asyncHandler( async(req, res) => {
 //     ]
     const avatarLocalPath = req.files?.avatar[0]?.path
     const coverImageLocalPath = req.files?.coverImage?.[0]?.path
+
+
     if(!avatarLocalPath){
         throw new ApiError(409, "Bad Request -- Avatar is reqired")
     }
@@ -96,6 +97,7 @@ const registerUser = asyncHandler( async(req, res) => {
     // one extra db call to check if user is succesfully created or not
     // STEP-8 remove password and refreshToken from response
     const registeredUser = await User.findById(user._id).select(" -password -refreshToken ")
+    
 
     if(!registeredUser){
         throw new ApiError(500, "Failed To Register User Please Try Again!!!")

@@ -5,8 +5,8 @@
 
 // Method-2
 import dotenv from "dotenv";
-dotenv.config();
-// dotenv.config({path: "./env"});
+// dotenv.config();
+dotenv.config({path: "./.env"});
 // this one is better and new method it hold consistency while both of them work's fine.
 // this one is not even in dotenv website it's an experimental feature.
 

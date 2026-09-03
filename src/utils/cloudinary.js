@@ -10,17 +10,24 @@ cloudinary.config({
 
 // we try to create method for upload.
 const uploadOnCloudinary = async (localFilePath) => {
+
     try {
         if(!localFilePath) return null
     // upload the file on cloudinary.
         const response = await cloudinary.uploader.upload(localFilePath, {
-            resource_type : auto
+            resource_type : "auto"
         })
     // file has been uploaded successfully..
         console.log("File is uploaded on cloudinary", response.url) // url upload hone k bad ka
         return response;
     } catch (error) {
-        fs.unlink(localFilePath) // remove the locally saved temperory file as the upload operation got failed
+        fs.unlink(localFilePath, (err) => {
+            if(err){
+                console.log("Error in deleting the files")
+            } else {
+                console.log("Files deleated Succesfully..!!!")
+            }
+        }) // remove the locally saved temperory file as the upload operation got failed
         console.log("error file can not be uploaded on cloudinary", error)
         return null
     }
