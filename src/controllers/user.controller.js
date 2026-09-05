@@ -1,10 +1,11 @@
-import {asyncHandler} from "../utils/asyncHandler.js" // curly braces are for named export.
+import { asyncHandler } from "../utils/asyncHandler.js" // curly braces are for named export.
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import cookieParser from "cookie-parser"
 
-const registerUser = asyncHandler( async(req, res) => {
+const registerUser = asyncHandler(async(req, res) => {
     // user ko register krne k liye kya kya steps follow krne padenge.
 
     // get user details from frontend.
@@ -71,7 +72,6 @@ const registerUser = asyncHandler( async(req, res) => {
     }
 
 
-
     // STEP-5 Upload avatar to Cloudinary
     const avatar = await uploadOnCloudinary(avatarLocalPath)
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
@@ -111,4 +111,92 @@ const registerUser = asyncHandler( async(req, res) => {
     )
 })
 
-export {registerUser}
+
+const loginUser   = asyncHandler(async(req,res) => {
+    // req body -> data
+    // check for username and email
+    // check if user exist
+    // check for correct password
+    // generate access and refresh token
+    // send success for login along with secureCookie with assess and refresh token
+
+    // STEP-1 user credentials from frontend
+    const {email,username,password} = req.body
+
+    // STEP-2 checking if it's not empty
+    const isEmpty = [email,username,password].some((para) => {
+        return (para?.trim() === "")
+    }) 
+    
+    if(isEmpty){
+        throw new ApiError(400, "Bad Request -- All paramteres are required to login")
+    }
+
+    //STEP-3 check if user exists
+    const user = await User.findOne({
+        $or:[ {username : username}, {email : email}]
+    })
+
+    if(!user){
+        throw new ApiError(404, "Bad Request -- Username and Email does not exist")
+    }
+
+    // STEP-4 check for correct password
+    const isUserPasswordCorrect = await user.isPasswordCorrect(password)
+
+    if(!isUserPasswordCorrect){
+        throw new ApiError(401, "Bas Request -- Unauthorised Password is incorrect")
+    }
+
+    // STEP-5 generate access and refresh token
+    const userAccessToken = user.generateAccessToken();
+    const userRefreshToken = await user.generateRefreshToken();
+
+    // we have user but it also contain password ans access token is not been updated to user we have we can add refresh token to user object or make a new db call.
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+    // STEP-6 return response
+    const options = {httpOnly:true, secure:true}
+
+    return res.status(200) 
+    .cookie("accessToken", userAccessToken, options)
+    .cookie("refreshToken", userRefreshToken, options)
+    .json(new ApiResponse(
+        200,
+        {
+            user: loggedInUser,userAccessToken,userRefreshToken,
+        },
+        "User Logged In Successfully..!!"
+    ))
+    
+})
+
+
+const logoutUser = asyncHandler( async(req,res) => {
+    
+
+    await User.findByIdAndUpdate(
+        req.user._id,  // find user by it's id
+        {
+            $set: { // set operator is used to set the value
+                refreshToken: undefined
+            }
+        },
+        {
+            new: true // new true means in response send me the updated object 
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    res.status(200)
+    .clearCookie("accessToken", options) // we used options as we have set the standards that this cookies will come secured
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged out successfully"))
+})
+
+
+export {registerUser, loginUser, logoutUser}

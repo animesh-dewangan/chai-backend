@@ -2,6 +2,7 @@ import mongoose, {Schema} from "mongoose"
 // const {Schema} = moongose
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
+import { ApiError } from "../utils/ApiError"
 
 
 const userSchema = new mongoose.Schema({
@@ -78,8 +79,8 @@ userSchema.methods.isPasswordCorrect = async function(password){
 }
 
 
-userSchema.methods.generateAccessToken = async function(){
-    return await jwt.sign(
+userSchema.methods.generateAccessToken = function(){
+    return jwt.sign(
         { // payload
             _id : this._id,
             username : this.username,
@@ -93,14 +94,25 @@ userSchema.methods.generateAccessToken = async function(){
 }
 
 userSchema.methods.generateRefreshToken = async function(){
-    return await jwt.sign(
-        {
-            _id : this._id
-        },
-        process.env.REFRESH_TOKEN_SECRET,
-        {
-            expiresIn : REFRESH_TOKEN_EXPIRY
-        }
-    )
+    try {
+        const refreshToken = jwt.sign(
+            {
+                _id : this._id
+            },
+            process.env.REFRESH_TOKEN_SECRET,
+            {
+                expiresIn : REFRESH_TOKEN_EXPIRY
+            }
+        )
+
+        this.refreshToken = refreshToken;
+
+        await this.save({ validateBeforeSave: false });
+
+        return refreshToken
+    } 
+    catch (error) {
+        throw new ApiError (500, "Something went wrong while creating refreshToken")
+    }
 }
 export const User = mongoose.model("User", userSchema)
