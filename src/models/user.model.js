@@ -2,7 +2,7 @@ import mongoose, {Schema} from "mongoose"
 // const {Schema} = moongose
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
-import { ApiError } from "../utils/ApiError"
+import { ApiError } from "../utils/ApiError.js"
 
 
 const userSchema = new mongoose.Schema({
@@ -88,7 +88,7 @@ userSchema.methods.generateAccessToken = function(){
         }, 
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn : porcess.env.ACCESS_TOKEN_EXPIRY
+            expiresIn : process.env.ACCESS_TOKEN_EXPIRY
         }
     )
 }
@@ -101,7 +101,7 @@ userSchema.methods.generateRefreshToken = async function(){
             },
             process.env.REFRESH_TOKEN_SECRET,
             {
-                expiresIn : REFRESH_TOKEN_EXPIRY
+                expiresIn : process.env.REFRESH_TOKEN_EXPIRY
             }
         )
 

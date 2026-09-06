@@ -3,7 +3,6 @@ import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
-import cookieParser from "cookie-parser"
 
 const registerUser = asyncHandler(async(req, res) => {
     // user ko register krne k liye kya kya steps follow krne padenge.
@@ -120,8 +119,10 @@ const loginUser   = asyncHandler(async(req,res) => {
     // generate access and refresh token
     // send success for login along with secureCookie with assess and refresh token
 
+    // ! loginUser does not accept form input rn as multer is not used in middleware to parse and make it multipart data
+
     // STEP-1 user credentials from frontend
-    const {email,username,password} = req.body
+    const { email, username, password } = req.body
 
     // STEP-2 checking if it's not empty
     const isEmpty = [email,username,password].some((para) => {
@@ -152,7 +153,8 @@ const loginUser   = asyncHandler(async(req,res) => {
     const userAccessToken = user.generateAccessToken();
     const userRefreshToken = await user.generateRefreshToken();
 
-    // we have user but it also contain password ans access token is not been updated to user we have we can add refresh token to user object or make a new db call.
+    // we have user but it also contain password and access token is not been updated to user we have
+    // we can add refresh token to user object or make a new db call.
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     // STEP-6 return response
@@ -176,15 +178,9 @@ const logoutUser = asyncHandler( async(req,res) => {
     
 
     await User.findByIdAndUpdate(
-        req.user._id,  // find user by it's id
-        {
-            $set: { // set operator is used to set the value
-                refreshToken: undefined
-            }
-        },
-        {
-            new: true // new true means in response send me the updated object 
-        }
+        req.user._id,  // find user by it's id 
+        { $set: { refreshToken: undefined } },  // set operator is used to set the value
+        // { returnDocument: "after" }  // find and update usually return old instance this make sure it return after updating
     )
 
     const options = {
@@ -192,6 +188,9 @@ const logoutUser = asyncHandler( async(req,res) => {
         secure: true
     }
 
+    // we don't need to import cookie parser for .clearCookie method it is provided by express for response object
+    // normal response includes cookies so to logout user we need to remove this cookies and if the user 
+    // will not send cookies the server nolonger knows him
     res.status(200)
     .clearCookie("accessToken", options) // we used options as we have set the standards that this cookies will come secured
     .clearCookie("refreshToken", options)
