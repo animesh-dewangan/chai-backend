@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import jwt from 'jsonwebtoken'
 
 const registerUser = asyncHandler(async(req, res) => {
     // user ko register krne k liye kya kya steps follow krne padenge.
@@ -175,7 +176,8 @@ const loginUser   = asyncHandler(async(req,res) => {
 
 
 const logoutUser = asyncHandler( async(req,res) => {
-    
+    // how to logout user we have two task one to remove refresh token from db
+    // and second to remove access and refresh tokens cookies from req res.
 
     await User.findByIdAndUpdate(
         req.user._id,  // find user by it's id 
@@ -198,4 +200,55 @@ const logoutUser = asyncHandler( async(req,res) => {
 })
 
 
-export {registerUser, loginUser, logoutUser}
+const refreshAccessToken = asyncHandler( async(req, res) => {
+    // flow of generating access token.
+    // we were using authentication middleware to authinticate user and add an object called user to perform operations
+    // when access token get expired authintication fails and insted or directly giving error it checks for refresh token.
+    // first check if it has a refresh token
+    // then check if it's correct or not have it been tampered
+    // then user the user._id to call user instance from db
+    // check if db refresh token matches with the incoming one
+    // then generate new token update to db and return response with access token 
+    
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken
+
+    if(!incomingRefreshToken){
+        throw new ApiError(401, "Unauthorized request, Invalid Refresh Token")
+    }
+
+    const decodedRefreshToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+    const user = await User.findById(decodedRefreshToken?._id).select(" -password ")
+
+    if(!user){
+        throw new ApiError(401, "Invalid Refresh Token")
+    }
+    
+    if(incomingRefreshToken !== user.refreshToken){
+        throw new ApiError(401, "Unauthorized request, Request Token is Expired or Used")
+    }
+
+    const accessToken = user.generateAccessToken()
+    const refreshToken = await user.generateRefreshToken()
+
+    const updatedUser = await User.findById(user._id).select(" -password -refreshToken ")
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    res.status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(ApiResponse(
+        200,
+        {
+            user: updatedUser,accessToken,refreshToken
+        },
+        "Successfully genereted Access token from refresh Token"
+    ))
+})
+
+
+export {registerUser, loginUser, logoutUser, refreshAccessToken}

@@ -96,7 +96,7 @@ userSchema.methods.generateAccessToken = function(){
 userSchema.methods.generateRefreshToken = async function(){
     try {
         const refreshToken = jwt.sign(
-            {
+            { // payload
                 _id : this._id
             },
             process.env.REFRESH_TOKEN_SECRET,
@@ -115,4 +115,5 @@ userSchema.methods.generateRefreshToken = async function(){
         throw new ApiError (500, "Something went wrong while creating refreshToken")
     }
 }
+
 export const User = mongoose.model("User", userSchema)
