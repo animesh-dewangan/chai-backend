@@ -251,4 +251,120 @@ const refreshAccessToken = asyncHandler( async(req, res) => {
 })
 
 
-export {registerUser, loginUser, logoutUser, refreshAccessToken}
+const changeUserPassword = asyncHandler( async(req, res) => {
+    // flow of changing password 
+    // since user is req for change of passsword he must be logged in so we will use verifyJwt to validate user and add user object to req
+    // if user is valid then we will check for old password and new password in req.body
+    // make a db call and will check if old password is correcct or not
+    // then bcrypt the new password and update it to db and return response
+
+    const { oldPassword, newPassword } = req.body
+    
+    if(!oldPassword || !newPassword){
+        throw new ApiError(400, "Old and New passwords are Required")
+    }
+
+    const user = await User.findById(req.user?._id)
+
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+    if(!isPasswordCorrect){
+        throw new ApiError(401, "Unauthorized request, Old password is incorrect")
+    }
+
+    user.password = newPassword
+    await user.save({ validateBeforeSave : false }) //validateBeforeSave is used to skip the validation checks on the user model schema fiels like is it stirg, required and other checks
+
+    return res.status(200)
+    .json(new ApiResponse(200, {}, "password is updated successfully"))
+})
+
+
+const getCurrentUser = asyncHandler( async(req, res) => {
+    // we can use verifyJWT middleware to validate credentials and get the user object
+
+    return res.status(200).
+    json(new ApiResponse(200, req.user, "Current user fetched successfully"))
+})
+
+
+const updateAccountDetails = asyncHandler( async(req, res) => {
+
+    const {username, fullName, email} = req.body
+
+    if(username === undefined && fullName === undefined && email === undefined){
+        throw new ApiError(400, "Bad Request -- Atleast one parameter is required to update")
+    }
+
+    if(email !== undefined && !email.includes('@')){
+        throw new ApiError(400, "Bad request -- Invalid email")
+    }
+
+    // const user = await User.findById(req.user._id)
+
+    // if(username !== undefined && username !== user.username){ // if there is a username and it's not same update it 
+    //     user.username = username
+    // }
+    // if(email !== undefined && email !== user.email){ // if there is a email and it's not same update it
+    //     user.email = email
+    // }
+    // if(fullName !== undefined && fullName !== user.fullName){ // if there is a fullName and it's not same update it
+    //     user.fullName = fullName
+    // }
+
+    // await user.save();
+
+
+    // or maybe another way to update the user details 
+
+    const toUpdate = {}
+    if(username !== undefined) toUpdate.username = username
+    if(email !== undefined) toUpdate.email = email
+    if(fullName !== undefined) toUpdate.fullName = fullName
+
+    const updatedUser = await findUserByIdAndUpdate(req.user?._id,
+        {$set: toUpdate},
+        {returnDocument: "after", runValidators: true}
+    ).select("-password -refreshToken")
+
+    return res.status(200)
+    .json(new ApiResponse(200, updatedUser, "User account details updated successfully"))
+})
+
+
+const updateUserAvatar = asyncHandler( async(req, res) => {
+    // we must have used multer middleware to parese/accept files from from frontend
+    // normal express does no accept files so we need to use multer middleware to accept files 
+    // we will also check if the user is logged in or not using verifyJWT middleware
+    // we have done One mistake --> we didn't delete the old avatar from cloudinary
+
+    const avatarLocalPath = req.file?.avatar?.path || ""
+
+    if(!avatarLocalPath){
+        throw new ApiError(400, "Bad Request -- Avatar file is required")
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    if(!avatar){
+        throw new ApiError(500, "Failed to Upload Avatar on Cloudinary")
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id,
+        {$set: {avatar: avatar.url}},
+        {returnDocument: "after", runValidators: true}
+    ).select("-password -refreshToken")
+
+    return res.status(200)
+    .json(new ApiResponse(200, updatedUser, "Avatar Successfully Updated"))
+})
+
+
+export {registerUser,
+        loginUser, 
+        logoutUser, 
+        refreshAccessToken, 
+        changeUserPassword, 
+        getCurrentUser,
+        updateAccountDetails,
+        updateUserAvatar
+        }
