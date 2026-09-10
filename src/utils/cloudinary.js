@@ -1,6 +1,7 @@
 import {v2 as cloudinary} from "cloudinary"
 // file system is a node built in library used for file operations read, delete etc.
 import fs from "fs"
+import asyncHandler from "./asyncHandler.js"
 
 cloudinary.config({ 
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
@@ -40,4 +41,25 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 }
 
-export {uploadOnCloudinary}
+const deleteFromCloudinary = asyncHandler(async (avatarURL) => {
+    // "https://res.cloudinary.com/demo/image/upload/v1712345678/myapp/avatars/user123.jpg" we get this 
+    // apublic id = myapp/avatars/user123 
+
+    const parts = avatarURL.split("/")
+
+    const uploadIndex = parts.indexOf("upload")
+
+    const publicIdParts  = parts.slice(uploadIndex+1)
+
+    if(publicIdParts?.[0]?.startsWith("v")){ // the version number part is not always true.
+        publicIdParts.shift()
+    }
+
+    const extendedPublicId = publicIdParts.join("/")
+
+    const publicId = extendedPublicId.substring(0, extendedPublicId.lastIndexOf("."))
+
+    return result = await cloudinary.uploader.destroy(publicId, {resource_type: "image"})
+})
+
+export {uploadOnCloudinary, deleteFromCloudinary}

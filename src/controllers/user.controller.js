@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js" // curly braces are for named export.
 import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from 'jsonwebtoken'
 
@@ -339,7 +339,6 @@ const updateUserAvatar = asyncHandler( async(req, res) => {
     // we have done One mistake --> we didn't delete the old avatar from cloudinary
 
     const avatarLocalPath = req.file?.avatar?.path || ""
-
     if(!avatarLocalPath){
         throw new ApiError(400, "Bad Request -- Avatar file is required")
     }
@@ -348,6 +347,9 @@ const updateUserAvatar = asyncHandler( async(req, res) => {
     if(!avatar){
         throw new ApiError(500, "Failed to Upload Avatar on Cloudinary")
     }
+
+    const userAvatar = await User.findById(req.user._id).select("avatar")
+    await deleteFromCloudinary(userAvatar?.avatar) // we can delete old version from cloudinary
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id,
         {$set: {avatar: avatar.url}},
