@@ -45,6 +45,8 @@ const deleteFromCloudinary = asyncHandler(async (avatarURL) => {
     // "https://res.cloudinary.com/demo/image/upload/v1712345678/myapp/avatars/user123.jpg" we get this 
     // apublic id = myapp/avatars/user123 
 
+    if(!avatarURL) return null
+
     const parts = avatarURL.split("/")
 
     const uploadIndex = parts.indexOf("upload")
@@ -59,7 +61,7 @@ const deleteFromCloudinary = asyncHandler(async (avatarURL) => {
 
     const publicId = extendedPublicId.substring(0, extendedPublicId.lastIndexOf("."))
 
-    return result = await cloudinary.uploader.destroy(publicId, {resource_type: "image"})
+    return result = await cloudinary.uploader.destroy(publicId, {resource_type: "auto"})
 })
 
 export {uploadOnCloudinary, deleteFromCloudinary}

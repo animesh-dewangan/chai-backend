@@ -7,12 +7,12 @@ const {Schema} = mongoose; // now Schema = mongoose.Schema
 
 const subscriptionSchema = new Schema({ // we defined the schema 
 
-    subscriber: { // subscriber is the user who subscribe to the channel owner.
+    subscriber: { // subscriber is the user who subscribe to the channel owner. and it stores object id of User instance.
         type: Schema.Types.ObjectId,
         ref: "User"
     },
 
-    channel:{ // channel is the user who is the owner of the channel.
+    channel:{ // channel is the user who is the owner of the channel. and it stores object id of User instance.
         type: Schema.Types.ObjectId,
         ref: "User",
         required: true

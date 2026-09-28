@@ -30,7 +30,7 @@ export {asyncHandler}
 
 // export {asyncHandler};
 
-// this is what i have written in asynnc handler above conceptually.
+// this is what i have written in asynnc handler  by above conceptually.
 // const asyncHandler = (func) => {
 //     return async (req,res,next) => {
 //         try {

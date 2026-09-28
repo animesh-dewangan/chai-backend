@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from 'jsonwebtoken'
+import { Subscription } from "../models/subscription.model.js"
 
 const registerUser = asyncHandler(async(req, res) => {
     // user ko register krne k liye kya kya steps follow krne padenge.
@@ -349,17 +350,102 @@ const updateUserAvatar = asyncHandler( async(req, res) => {
     }
 
     const userAvatar = await User.findById(req.user._id).select("avatar")
-    await deleteFromCloudinary(userAvatar?.avatar) // we can delete old version from cloudinary
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id,
         {$set: {avatar: avatar.url}},
         {returnDocument: "after", runValidators: true}
     ).select("-password -refreshToken")
 
+    if(await deleteFromCloudinary(userAvatar?.avatar)){  // we can delete old version from cloudinary
+        throw new ApiError(500, "failed to delete old avatar from cloudinary")
+    }
+
     return res.status(200)
     .json(new ApiResponse(200, updatedUser, "Avatar Successfully Updated"))
 })
 
+
+const getUserChannelProfile = asyncHandler( async(req,res) => {
+    // now initially we get username and other informations from body or cookies 
+    // but now we will get username from params and other details from db 
+    // like if user want's to see other user's profile then he will send username in params and we will get user details from db
+
+    const { username } = req.params
+
+    if(!username?.trim()){
+        throw new ApiError(400,"Bad Request-- Username is missing")
+    }
+
+    // aggregation pipelines to get the user informations from the db
+    // pipeline return an array of objects
+    const channel = await User.aggregate([
+        {
+            $match: { username : username?.toLowerCase()}
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            }
+        }, 
+        {
+            $addFields: {
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                channelSubscribedToCount: {
+                    $size: "$subscribedTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                username: 1,
+                email: 1,
+                fullName: 1,
+                avatar: 1,
+                coverImage: 1,
+                subscribers: 1,
+                subscribedTo: 1,
+                subscribersCount: 1,
+                channelSubscribedToCount: 1,
+                isSubscribed: 1
+            }
+        }
+    ])
+
+
+    if(!channel?.length){ // if the length of array is "0"
+        throw new ApiError(401, "User channel does not exist")
+    }
+
+    return res.status(200)
+    .json(
+        new ApiResponse(200, channel[0], "User Channel Fetched Successfully")
+    )
+})
+
+
+const getWatchHistory = asyncHandler( async(req,res) => {
+    
+})
 
 export {registerUser,
         loginUser, 
@@ -368,5 +454,7 @@ export {registerUser,
         changeUserPassword, 
         getCurrentUser,
         updateAccountDetails,
-        updateUserAvatar
+        updateUserAvatar,
+        getUserChannelProfile,
+        getWatchHistory
         }
