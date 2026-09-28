@@ -384,7 +384,7 @@ const getUserChannelProfile = asyncHandler( async(req,res) => {
         },
         {
             $lookup: {
-                from: "subscriptions",
+                from: "subscriptions", // Subscription model is saved in db as subscriptions all smaller case and purel.
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers"
@@ -444,7 +444,103 @@ const getUserChannelProfile = asyncHandler( async(req,res) => {
 
 
 const getWatchHistory = asyncHandler( async(req,res) => {
-    
+    /* req from user -> req.user._id (authentication) -> db call and get the user instance
+    -> from user instacne we get user detail and user watch history -> from his history we cross join(map) with video schema
+    -> then we get all video details of video that we need to send to frontend about video history
+    -> but the video owner details only contain user _id so we have another aggregate pipeline which perform join 
+    operation to get video owner details from user schema then we filter out unnecessary details and set this whole retured response to the frontend */
+
+    const user = await User.aggregate([
+        {
+            /* why we used .ObjectI? 
+            req.user._id is a litral valid id string = "ankjshuwejhrjhnma2389e"
+            but in db the _id = ObjectId('ajaerfieiueu218ieuhcgd') this difference is handeled by mangoose but aggrigation pipelines are send directly so we use Types.ObjectId*/
+            $match: {_id : new mongoose.Types.ObjectId(req.user?._id)}
+        }, 
+        {
+            $lookup: {
+                from: "videos", // Video model is saved in db as videos smaller case and purel.
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        /* the videos lookup get the array of object where each object is a video schema but the video schema won't be able to send video owner details as it contain owner as _id of user 
+                        so we use nested aggregate to fetch user details */
+                        $lookup: {
+                            from: "users", // User model is saved in db as users smaller case and purel.
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            /* using the attribute name of (as) same as original attribute will overwrite the attribute with the array of object that is being returned by the aggrigatin */
+                            pipeline: [
+                                /* from video schema we searched for user details in User schema but we don't need every attribute so we select only those what is being needed */
+                                {
+                                    $project:{
+                                        username: 1,
+                                        fullName: 1,
+                                        avatar: 1,
+                                        coverImage: 1,
+                                    }
+                                }
+                            ]
+                        }
+                    }, 
+                    {
+                        $addFields: {
+                            owner: {
+                                // $arrayElemAt: ["ownerDetails", 0],  first instance of the returned lookup array.
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }   
+        },
+        // {
+        //     $project: {
+        //         username: 1,
+        //         fullName: 1,
+        //         watchHistory: 1,
+        //     }
+        // }
+    ])
+
+    if(!user?.length){
+        throw new ApiError(404, "User not Found")
+    }
+
+    /* user = [
+    {
+        _id: ObjectId("..."), // user -> _id
+
+        username: "animesh",
+        fullName: "Animesh Dewangan",
+
+        other User fields...
+        
+        watchHistory: [
+            {
+                _id: ObjectId("video1"),  // video -> _id
+                title: "Video 1",
+
+                owner: {
+                    _id: ObjectId("user1"),
+                    username: "animesh",
+                    fullName: "Animesh Dewangan",
+                    avatar: "...",
+                    coverImage: "..."
+                },
+
+                other Video fields...
+            }
+        ],
+    }
+    ] */
+     
+
+    return res.status(200)
+    .json(new ApiResponse(200,user[0].watchHistory,"User History Fetched Successfully"))
 })
 
 export {registerUser,
