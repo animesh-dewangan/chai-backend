@@ -182,7 +182,7 @@ const logoutUser = asyncHandler( async(req,res) => {
 
     await User.findByIdAndUpdate(
         req.user._id,  // find user by it's id 
-        { $set: { refreshToken: undefined } },  // set operator is used to set the value
+        { $set: { refreshToken: null } },  // set operator is used to set the value
         // { returnDocument: "after" }  // find and update usually return old instance this make sure it return after updating
     )
 

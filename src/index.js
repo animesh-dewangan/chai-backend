@@ -45,15 +45,15 @@ connectDB()
 Approach One
 const app = express();
 
-// this is a common approach to connect to a database 
-// create function and call it
-// function connectDB(){};  
+this is a common approach to connect to a database 
+create function and call it
+function connectDB(){};  
 
-// connectDB();
+connectDB();
 
-// more professional approach use iffe.
-// IIFE stands for Immediately Invoked Function Expression.
-// It is a function that is created and executed immediately after it is defined.
+more professional approach use iffe.
+IIFE stands for Immediately Invoked Function Expression.
+It is a function that is created and executed immediately after it is defined.
 
 ( async() => {
     try {
