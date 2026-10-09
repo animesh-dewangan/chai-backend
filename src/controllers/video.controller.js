@@ -191,4 +191,54 @@ const updateVideo = asyncHandler( async(req, res) => {
     .json(new ApiResponse(200,newVideo,"Video Updated Successfully..!!"))
 })
 
-export { getAllVideos, publishAVideo, getVideoById, updateVideo }
+const deleteVideo = asyncHandler( async(req,res) => {
+    // TODO: delete video
+    
+    const {videoId} = req.params
+
+    if(!videoId){
+        throw new ApiError(400, "Video Id is required")
+    }
+
+    const deletedVideo = await Video.findOneAndDelete({
+        _id: videoId,
+        owner: req.user?._id // we used user because he must be logged in and owner user can only delete the video
+    })
+
+    if(!deletedVideo){
+        throw new ApiError(400, "Video not found or unauthorized")
+    }
+
+    res.status(200)
+    .json( new ApiResponse(200, deletedVideo, "Video deleted successfully"))
+})
+
+const togglePublishStatus = asyncHandler( async(req,res) => {
+    const { videoId } = req.params
+
+    if(!videoId){
+        throw new ApiError(400, "Video Id is required")
+    }
+
+    const updatedVideo = await findOneAndUpdate({
+                                                    _id: videoId,
+                                                    owner: req.user?._id
+                                                },
+                                                [
+                                                    {
+                                                    $set: {isPublic: {$not: "$isPublic"}}
+                                                    }
+                                                ],
+                                                {
+                                                    new: true
+                                                })
+
+    if(!updatedVideo){
+        throw new ApiError(400, "Video not found or Unauthorized")
+    }
+
+    res.status(200)
+    .json( new ApiResponse(200, updatedVideo, "Video toggled successfully"))
+})
+
+export { getAllVideos, publishAVideo, getVideoById, updateVideo, deleteVideo, togglePublishStatus }
