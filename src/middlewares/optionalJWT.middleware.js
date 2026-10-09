@@ -1,8 +1,7 @@
 import jwt from "jsonwebtoken"
-import cookieParser from "cookie-parser"
-import { asyncHandler } from "../utils/asyncHandler"
-import { User } from "../models/user.model"
-import { ApiError } from "../utils/ApiError"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { User } from "../models/user.model.js"
+import { ApiError } from "../utils/ApiError.js"
 
 const optionalAuthorization = asyncHandler( async(req,_,next) => {
     /* we again wrap it with try and catch because if invalid access token the verifyJWT will throw an error

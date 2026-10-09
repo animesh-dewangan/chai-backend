@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 import { uploadOnCloudinary, deleteFromCloudinary} from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import mongoose from "mongoose"
 import jwt from 'jsonwebtoken'
 
 const registerUser = asyncHandler(async(req, res) => {
@@ -241,7 +242,7 @@ const refreshAccessToken = asyncHandler( async(req, res) => {
     res.status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(ApiResponse(
+    .json( new ApiResponse(
         200,
         {
             user: updatedUser,accessToken,refreshToken
@@ -322,7 +323,7 @@ const updateAccountDetails = asyncHandler( async(req, res) => {
     if(email !== undefined) toUpdate.email = email
     if(fullName !== undefined) toUpdate.fullName = fullName
 
-    const updatedUser = await findUserByIdAndUpdate(req.user?._id,
+    const updatedUser = await User.findByIdAndUpdate(req.user?._id,
         {$set: toUpdate},
         {returnDocument: "after", runValidators: true}
     ).select("-password -refreshToken")
@@ -338,7 +339,8 @@ const updateUserAvatar = asyncHandler( async(req, res) => {
     // we will also check if the user is logged in or not using verifyJWT middleware
     // we have done One mistake --> we didn't delete the old avatar from cloudinary
 
-    const avatarLocalPath = req.file?.avatar?.path || ""
+    const avatarLocalPath = req.file?.path 
+
     if(!avatarLocalPath){
         throw new ApiError(400, "Bad Request -- Avatar file is required")
     }

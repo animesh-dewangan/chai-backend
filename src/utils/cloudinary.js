@@ -1,7 +1,7 @@
 import {v2 as cloudinary} from "cloudinary"
 // file system is a node built in library used for file operations read, delete etc.
 import fs from "fs"
-import asyncHandler from "./asyncHandler.js"
+import {asyncHandler} from "./asyncHandler.js"
 
 cloudinary.config({ 
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 

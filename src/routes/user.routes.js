@@ -16,7 +16,7 @@ router.route("/login").post(loginUser)
 // Secured route -> user must be logged in to perform this tasks
 router.route("/logout").post(verifyJWT, logoutUser) // after .post <middleWare>, <anotherMiddleWare> if requrired then <requestedService>
 router.route("/refresh-token").post(refreshAccessToken)
-router.route("/change-password").post(verifyJWT,changeUserPassword)
+router.route("/change-password").patch(verifyJWT,changeUserPassword)
 router.route("/current-user").get(verifyJWT,getCurrentUser)
 
 // updateAccountDetails must be done on patch otherwise all the feilds will be updated
