@@ -25,12 +25,14 @@ app.use(cookieParser());
 // routes import
 import userRouter from "./routes/user.routes.js"
 import videoRouter from "./routes/video.routes.js"
+import subscriptionRouter from "./routes/subscription.routes.js";
 
 // rooutes declaration
 // we created an api were we req when we want do do operations related to users.
 // we added /api/v1 to let us know it's v1 and if we did someupdates or created another version it helps.
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/video", videoRouter)
+app.use("/api/v1/subscription", subscriptionRouter);
 //example - https://localhost:8000/api/v1/users/register
 
 // Method-1 Named export.

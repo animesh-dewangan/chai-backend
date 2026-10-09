@@ -200,7 +200,7 @@ const deleteVideo = asyncHandler( async(req,res) => {
         throw new ApiError(400, "Video Id is required")
     }
 
-    const deletedVideo = await Video.findOneAndDelete({
+    const deletedVideo = await Video.findOneAndDelete({ // after deleting it will return the object
         _id: videoId,
         owner: req.user?._id // we used user because he must be logged in and owner user can only delete the video
     })
